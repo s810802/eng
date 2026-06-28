@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WordStorm: Typing Shooter | 英文字單字打字射擊遊戲</title>
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="WordStorm 是一款刺激的賽博龐克風格英文單字打字射擊遊戲。在單字墜落前拼打消滅它們，挑戰您的打字速度與反應極限！">
+    <meta name="keywords" content="打字遊戲, 英文單字, 射擊遊戲, 賽博龐克, Web Audio, HTML5 Canvas">
+    <meta name="author" content="Antigravity">
+    <link rel="stylesheet" href="style.css">
+    
+    <!-- Google Fonts: Orbitron (Sci-fi) and Outfit (Clean modern UI) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;800;900&family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div id="app-container">
+        <!-- Main Game Area -->
+        <div id="game-container">
+            <canvas id="game-canvas"></canvas>
+            
+            <!-- Real-time HUD Overlay -->
+            <div id="hud" class="hidden">
+                <div class="hud-item level-container">
+                    <div class="label">SECTOR</div>
+                    <div id="hud-level" class="value">01</div>
+                </div>
+                
+                <div class="hud-item score-container">
+                    <div class="label">SCORE</div>
+                    <div id="hud-score" class="value">000,000</div>
+                </div>
+                
+                <div class="hud-item shield-container">
+                    <div class="label">DEFENSE SHIELD</div>
+                    <div class="shield-wrapper">
+                        <div id="shield-bar-fill"></div>
+                        <div class="shield-grid">
+                            <span></span><span></span><span></span><span></span><span></span>
+                            <span></span><span></span><span></span><span></span><span></span>
+                        </div>
+                    </div>
+                    <div id="hud-shield-val" class="shield-text">10 / 10</div>
+                </div>
+            </div>
+
+            <!-- Controls overlay for audio/pause -->
+            <div id="mini-controls" class="hidden">
+                <button id="btn-sound" class="control-btn" title="切換音效">
+                    <svg id="sound-icon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" width="24" height="24">
+                        <path d="M13.5 4.06c0-1.336-1.616-2.005-2.56-1.06l-4.5 4.5H4.5A1.5 1.5 0 003 9v6a1.5 1.5 0 001.5 1.5h2l4.5 4.5c.944.945 2.56.276 2.56-1.06V4.06zM17.78 9.22a.75.75 0 10-1.06 1.06L18.44 12l-1.72 1.72a.75.75 0 001.06 1.06l1.72-1.72 1.72 1.72a.75.75 0 101.06-1.06L20.56 12l1.72-1.72a.75.75 0 00-1.06-1.06l-1.72 1.72-1.72-1.72z" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Screen Overlays -->
+            
+            <!-- 1. Start Screen -->
+            <div id="start-screen" class="overlay-screen active">
+                <div class="glow-logo">
+                    <h1 class="title-glow" data-text="WORDSTORM">WORDSTORM</h1>
+                    <p class="subtitle">TYPING DEFENDER</p>
+                </div>
+                
+                <div class="mission-brief">
+                    <h2>【 任務簡報 】</h2>
+                    <ul>
+                        <li><span class="highlight">打字消滅</span>：畫面上方會掉落英文單字，在它們沉入底部前，按下鍵盤打出對應字母即可進行雷射擊落。</li>
+                        <li><span class="highlight">單字難度</span>：關卡會由 2-3 個字母的簡單詞彙開始，隨著分數提升，單字長度會變長，速度也會加快。</li>
+                        <li><span class="highlight">防線防禦</span>：如果漏掉單字（未在抵達底部前打完），防禦護盾會扣除 1 點生命值，且分數扣 1 分。</li>
+                        <li><span class="highlight">系統崩潰</span>：累積漏掉超過 10 個單字（護盾歸零）時，遊戲即會宣告 GAME OVER。</li>
+                    </ul>
+                </div>
+                
+                <button id="btn-start" class="cyber-btn green-glow">
+                    <span class="btn-text">LAUNCH DEFENSE</span>
+                    <span class="btn-glitch"></span>
+                </button>
+            </div>
+            
+            <!-- 2. Game Over Screen -->
+            <div id="game-over-screen" class="overlay-screen hidden">
+                <h1 class="title-glow red-glow-text" data-text="SYSTEM COLLAPSED">SYSTEM COLLAPSED</h1>
+                <p class="game-over-desc">防線已遭破壞，護盾徹底瓦解。</p>
+                
+                <div class="results-box">
+                    <div class="result-row">
+                        <span class="result-label">消滅分數 (SCORE)</span>
+                        <span id="final-score" class="result-val highlight-green">000,000</span>
+                    </div>
+                    <div class="result-row">
+                        <span class="result-label">抵達星區 (SECTOR)</span>
+                        <span id="final-level" class="result-val highlight-blue">01</span>
+                    </div>
+                </div>
+                
+                <button id="btn-restart" class="cyber-btn red-glow">
+                    <span class="btn-text">REDEPLOY TURRET</span>
+                    <span class="btn-glitch"></span>
+                </button>
+            </div>
+
+            <!-- 3. Pause Screen -->
+            <div id="pause-screen" class="overlay-screen hidden">
+                <h1 class="title-glow blue-glow-text" data-text="TACTICAL PAUSE">TACTICAL PAUSE</h1>
+                <p class="pause-desc">戰術防禦暫停中...</p>
+                
+                <div class="pause-controls">
+                    <button id="btn-resume" class="cyber-btn blue-glow">
+                        <span class="btn-text">RESUME GAME</span>
+                    </button>
+                    <button id="btn-pause-restart" class="cyber-btn red-glow">
+                        <span class="btn-text">RESTART MISSION</span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Script references -->
+    <script src="words.js"></script>
+    <script src="audio.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>
